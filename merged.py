@@ -43,7 +43,10 @@ def parse_sentence_starts(user_response, possible_sentence_starts):
     if "!" in user_response:
         print("Please stop screaming")
     if len(punctuations) == 0:
-        print("Why arent you using punction stupid")
+        p = random.choice(["Why arent you using punction stupid", "Use punctuation please"])
+        print(p)
+    if len(user_response.split()) == 1:
+        print("Please use full sentences. Not just one word.")
     if len(locations) >= 1:
         print(random.choice(locations))
     if len(dont_understands) >= 1:
