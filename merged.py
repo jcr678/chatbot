@@ -13,9 +13,9 @@ from chatterbot.trainers import ChatterBotCorpusTrainer
 import pickle
 from chatterbot.trainers import ListTrainer
 
+nlp = spacy.load('en')
 #stopwords = stopwords.words('english')
 def parse_name(nameString):
-    nlp = spacy.load('en')
     doc = nlp(nameString)
     nouns = [noun.text for noun in doc.noun_chunks if "name" not in noun.text] #ignore the noun "name"
     if len(nouns) == 1:
@@ -23,6 +23,43 @@ def parse_name(nameString):
     else:
         nameString = input("Sorry could you repeat that?")
         parse_name(nameString)
+
+def parse_sentence_starts(user_response, possible_sentence_starts):
+    doc = nlp(user_response)
+    #when user says an adjective repeat it back to them!
+    adjectives = [random.choice(["True, that is very " + str(d), "Oh wow very " + str(d)]) for d in doc if d.pos_ == "ADJ"]
+    numbers = ["That is an interesting number... " + str(d) for d in doc if d.pos_ == "NUM"]
+    interjections = [random.choice([str(d) + "!", str(d)])
+                                for d in doc if d.pos_ == "INTJ"]
+    dont_understands = ["I dont understand that word really, " + str(d) for d in doc if d.pos_ == "X"]
+    locations = ["What an interesting place " + str(d)
+                                for d in doc.ents if d.label_ == "GPE" or d.label_ == "LOC"]
+    punctuations = [str(d) for d in doc if d.pos_ == "PUNCT"]
+    possible_sentence_starts.extend(adjectives)
+    possible_sentence_starts.extend(numbers)
+    possible_sentence_starts.extend(interjections)
+    if "?" in user_response: #let user know I saw that its a question
+        print("Ah yes that is a good question...")
+    if "!" in user_response:
+        print("Please stop screaming")
+    if len(punctuations) == 0:
+        print("Why arent you using punction stupid")
+    if len(locations) >= 1:
+        print(random.choice(locations))
+    if len(dont_understands) >= 1:
+        print(random.choice(dont_understands))
+        return possible_sentence_starts
+    if len(adjectives) >=1:
+        print(random.choice(adjectives))
+        return possible_sentence_starts
+    if len(interjections) >=1:
+        print(random.choice(interjections))
+        return possible_sentence_starts
+    if len(numbers) >= 1:
+        print(random.choice(numbers))
+        return possible_sentence_starts
+    print(random.choice(possible_sentence_starts))
+    return possible_sentence_starts
 
 def return_topic_chose(topic_string, topics):
     #stemmer = PorterStemmer()
@@ -62,16 +99,18 @@ def main():
     )
     trainer = ListTrainer(bot)
     trainer.train(to_train)
-    nameString = input("Hello, welcome to Austin. What is your name?")
+    nameString = input("Hello, welcome to Austin. Ill tell you about the city. What is your name?")
     name = parse_name(nameString)
     print("Hello " + name)
-
-    possible_sentence_starts = ["Let me tell you an Austin fact: ", "A yes " + name, "ect..."]
+    possible_sentence_starts = ["Okay, " + name]
+    i = 0
     while True:
         try:
-            print("User response: ")
-            bot_input = bot.get_response(input())
-            print(random.choice(possible_sentence_starts))
+            #print("User response: ")
+            user_response = input("User response: ")
+            bot_input = bot.get_response(user_response)
+            possible_sentence_starts = parse_sentence_starts(user_response, possible_sentence_starts)
+            print("Let me tell you another Austin fact! Please ask about Austin.")
             print("\t" + str(bot_input))
 
         except(KeyboardInterrupt, EOFError, SystemExit):
